@@ -1,0 +1,48 @@
+2018-10-06-14:28:48
+
+nThread: 2
+cpu: False
+nGPU: 1
+datadir: data_dir/market1501
+data_train: Market1501
+data_test: Market1501
+reset: True
+epochs: 400
+test_every: 50
+batchid: 8
+batchimage: 4
+batchtest: 16
+test_only: True
+model: MGN
+loss: 1*CrossEntropy+2*Triplet
+act: relu
+pool: avg
+feats: 256
+height: 384
+width: 128
+num_classes: 751
+lr: 0.0002
+optimizer: ADAM
+momentum: 0.9
+dampening: 0
+nesterov: False
+beta1: 0.9
+beta2: 0.999
+amsgrad: True
+epsilon: 1e-08
+gamma: 0.1
+weight_decay: 0.0005
+decay_type: step_320_380
+lr_decay: 60
+margin: 1.2
+re_rank: True
+random_erasing: True
+probability: 0.5
+savedir: saved_models
+outdir: out
+resume: 0
+save: adam_1
+load: 
+save_models: False
+pre_train: 
+

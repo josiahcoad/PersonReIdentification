@@ -5,6 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from torchvision.models.resnet import resnet50, Bottleneck
+import pdb
 
 def make_model(args):
     return MGN(args)
@@ -103,6 +104,8 @@ class MGN(nn.Module):
         nn.init.constant_(fc.bias, 0.)
 
     def forward(self, x):
+        pdb.set_trace()
+        
 
         x = self.backone(x)
 
