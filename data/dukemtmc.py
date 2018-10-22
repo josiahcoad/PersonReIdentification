@@ -38,7 +38,6 @@ class dukeMTMC(dataset.Dataset):
     @staticmethod
     def id(file_path):
 
-     
         return int(file_path.split('/')[-1].split('_')[0])
 
     @staticmethod
