@@ -35,7 +35,7 @@ class Data:
         else:
             self.train_loader = None
         
-        if args.data_test in ['Market1501', 'csce625']:
+        if args.data_test in ['Market1501', 'csce625', 'dukeMTMC']:
             module = import_module('data.' + args.data_test.lower())
             self.testset = getattr(module, args.data_test)(args, test_transform, 'test')
             self.queryset = getattr(module, args.data_test)(args, test_transform, 'query')
