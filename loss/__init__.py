@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-from loss.triplet import TripletLoss, TripletSemihardLoss
+from loss.triplet import TripletLoss, TripletSemihardLoss, AlignedTripletLoss
 
 class Loss(nn.modules.loss._Loss):
     def __init__(self, args, ckpt):
@@ -26,6 +26,9 @@ class Loss(nn.modules.loss._Loss):
                 loss_function = nn.CrossEntropyLoss()
             elif loss_type == 'Triplet':
                 loss_function = TripletLoss(args.margin)
+            # CSCE 625: Aligned loss evaluation for aligned features
+            elif loss_type == 'AlignedTriplet':
+                loss_function = AlignedTripletLoss()
 
             self.loss.append({
                 'type': loss_type,
@@ -54,22 +57,26 @@ class Loss(nn.modules.loss._Loss):
             )
 
     def forward(self, outputs, labels):
+
         losses = []
         for i, l in enumerate(self.loss):
+            # Triplet loss 
             if self.args.model == 'MGN' and l['type'] == 'Triplet':
                 loss = [l['function'](output, labels) for output in outputs[1:4]]
-                loss = sum(loss) / len(loss)
-                effective_loss = l['weight'] * loss
-                losses.append(effective_loss)
-                self.log[-1, i] += effective_loss.item()
-            elif self.args.model == 'MGN' and l['function'] is not None:
-                loss = [l['function'](output, labels) for output in outputs[4:]]
-                loss = sum(loss) / len(loss)
-                effective_loss = l['weight'] * loss
-                losses.append(effective_loss)
-                self.log[-1, i] += effective_loss.item()
+            # Cross Entropy loss
+            elif self.args.model == 'MGN' and l['type'] == 'CrossEntropy':
+                loss = [l['function'](output, labels) for output in outputs[4:-2]]
+            # CSCE 625: Aligned Parts Branch Loss
+            elif self.args.model == 'MGN' and l['type'] == 'AlignedTriplet':
+                loss = l['function'](outputs[-1], labels)
             else:
-                pass
+                continue
+
+            loss = sum(loss) / len(loss)
+            effective_loss = l['weight'] * loss
+            losses.append(effective_loss)
+            self.log[-1, i] += effective_loss.item()
+
         loss_sum = sum(losses)
         if len(self.loss) > 1:
             self.log[-1, -1] += loss_sum.item()

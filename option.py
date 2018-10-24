@@ -56,6 +56,15 @@ parser.add_argument('--load', type=str, default='', help='file name to load')
 parser.add_argument('--save_models', action='store_true', help='save all intermediate models')
 parser.add_argument('--pre_train', type=str, default='', help='pre-trained model directory')
 
+# CSCE 625: Added parameters
+parser.add_argument('--use_alighed_branch', action='store_true', help='whether to use the optional aligned-parts branch')
+parser.add_argument('--aligned_parts', type=int, default=7, help='number of local parts for aligned branch (set --use_aligned_branch also)')
+parser.add_argument('--extract_features_only', action='store_true', help='only extract feature from the dataset')
+parser.add_argument('--gallery_feature_file', type=str, default='feature_val_gallery.mat')
+parser.add_argument('--query_feature_file', type=str, default='feature_val_query.mat')
+# parser.add_argument('--gallery_labels_file', type=str, default='galleryInfo.txt')
+# parser.add_argument('--query_labels_file', type=str, default='queryInfo.txt')
+
 args = parser.parse_args()
 
 for arg in vars(args):
