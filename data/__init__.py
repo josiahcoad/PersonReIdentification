@@ -24,7 +24,7 @@ class Data:
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-        if not args.test_only:
+        if not args.test_only and not args.extract_features_only:
             module_train = import_module('data.' + args.data_train.lower())
             self.trainset = getattr(module_train, args.data_train)(args, train_transform, 'train')
             self.train_loader = dataloader.DataLoader(self.trainset,
@@ -35,8 +35,8 @@ class Data:
         else:
             self.train_loader = None
         
-        if args.data_test in ['Market1501', 'dukeMTMC']:
-            module = import_module('data.' + args.data_train.lower())
+        if args.data_test in ['Market1501', 'csce625', 'DukeMTMC']:
+            module = import_module('data.' + args.data_test.lower())
             self.testset = getattr(module, args.data_test)(args, test_transform, 'test')
             self.queryset = getattr(module, args.data_test)(args, test_transform, 'query')
 

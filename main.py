@@ -1,8 +1,10 @@
 import data
+import data2
 import loss
 import torch
 import model
 from trainer import Trainer
+from trainer2 import Trainer2
 
 from option import args
 import utils.utility as utility
@@ -12,7 +14,11 @@ ckpt = utility.checkpoint(args)
 loader = data.Data(args)
 model = model.Model(args, ckpt)
 loss = loss.Loss(args, ckpt) if not args.test_only else None
-trainer = Trainer(args, model, loss, loader, ckpt)
+if args.two_datasets:
+    loader2 = data2.Data(args)
+    trainer = Trainer2(args, model, loss, loader, loader2, ckpt)
+else:
+    trainer = Trainer(args, model, loss, loader, ckpt)
 
 n = 0
 while not trainer.terminate():

@@ -3,7 +3,7 @@ from data.common import list_pictures
 from torch.utils.data import dataset
 from torchvision.datasets.folder import default_loader
 
-class dukeMTMC(dataset.Dataset):
+class DukeMTMC(dataset.Dataset):
     def __init__(self, args, transform, dtype):
 
         self.transform = transform
