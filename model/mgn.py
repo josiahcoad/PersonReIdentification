@@ -53,6 +53,36 @@ class MGN(nn.Module):
         self.maxpool_zg_p3 = pool2d(kernel_size=(24, 8))
         self.maxpool_zp2 = pool2d(kernel_size=(12, 8))
         self.maxpool_zp3 = pool2d(kernel_size=(8, 8))
+        
+        self.localization = nn.Sequential(
+            nn.Conv2d(3, 10, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(10, 20, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(20,20, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2, stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(20,32, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2,stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(32,32, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2,stride=2),
+            nn.ReLU(True),
+            nn.Conv2d(32,32, kernel_size=3, padding = 1),
+            nn.MaxPool2d(2,stride=2),
+            nn.ReLU(True)
+        )
+
+        # Regressor for the 3 * 2 affine matrix
+        self.fc_loc = nn.Sequential(
+            nn.Linear(32* 6 * 2, 128),
+            nn.ReLU(True),
+            nn.Linear(128,128),
+            nn.ReLU(True),
+            nn.Linear(128, 3 * 2)
+        )
 
         reduction = nn.Sequential(nn.Conv2d(2048, args.feats, 1, bias=False), nn.BatchNorm2d(args.feats), nn.ReLU())
 
@@ -102,12 +132,27 @@ class MGN(nn.Module):
         nn.init.kaiming_normal_(fc.weight, mode='fan_out')
         #nn.init.normal_(fc.weight, std=0.001)
         nn.init.constant_(fc.bias, 0.)
+        
+    def stn(self, x):
+        xs = self.localization(x)
+        xs = xs.view(-1, 32 * 6 * 2)
+        theta = self.fc_loc(xs)
+        theta = theta.view(-1, 2, 3)
+
+        grid = F.affine_grid(theta, x.size())
+        x = F.grid_sample(x, grid)
+
+        return x
+    
 
     def forward(self, x):
-        pdb.set_trace()
-        
 
+        
+       # x = self.stn(x)
+        
         x = self.backone(x)
+        
+  
 
         p1 = self.p1(x)
         p2 = self.p2(x)

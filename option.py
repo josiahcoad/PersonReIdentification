@@ -7,8 +7,12 @@ parser.add_argument('--cpu', action='store_true', help='use cpu only')
 parser.add_argument('--nGPU', type=int, default=1, help='number of GPUs')
 
 parser.add_argument("--datadir", type=str, default="Market-1501-v15.09.15", help='dataset directory')
+parser.add_argument("--datadir2", type=str, default="DukeMTMC-reID", help='second dataset directory')
 parser.add_argument('--data_train', type=str, default='Market1501', help='train dataset name')
 parser.add_argument('--data_test', type=str, default='Market1501', help='test dataset name')
+parser.add_argument('--two_datasets', type=bool, default=False, help='use multiple datasets')
+parser.add_argument('--data_train2', type = str, default='DukeMTMC', help = 'train2 dataset name')
+parser.add_argument('--data_test2', type = str, default='DukeMTMC', help = 'test2 dataset name')
 
 parser.add_argument('--reset', action='store_true', help='reset the training')
 parser.add_argument("--epochs", type=int, default=80, help='number of epochs to train')
@@ -55,6 +59,13 @@ parser.add_argument('--save', type=str, default='test', help='file name to save'
 parser.add_argument('--load', type=str, default='', help='file name to load')
 parser.add_argument('--save_models', action='store_true', help='save all intermediate models')
 parser.add_argument('--pre_train', type=str, default='', help='pre-trained model directory')
+
+# CSCE 625: Added parameters
+parser.add_argument('--use_alighed_branch', action='store_true', help='whether to use the optional aligned-parts branch')
+parser.add_argument('--aligned_parts', type=int, default=7, help='number of local parts for aligned branch (set --use_aligned_branch also)')
+parser.add_argument('--extract_features_only', action='store_true', help='only extract feature from the dataset')
+parser.add_argument('--gallery_feature_file', type=str, default='feature_val_gallery.mat')
+parser.add_argument('--query_feature_file', type=str, default='feature_val_query.mat')
 
 args = parser.parse_args()
 
