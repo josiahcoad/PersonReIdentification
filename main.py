@@ -19,10 +19,16 @@ if args.two_datasets:
     trainer = Trainer2(args, model, loss, loader, loader2, ckpt)
 else:
     trainer = Trainer(args, model, loss, loader, ckpt)
+loss = loss.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
+trainer = Trainer(args, model, loss, loader, ckpt)
 
-n = 0
-while not trainer.terminate():
-	n += 1
-	trainer.train()
-	if args.test_every!=0 and n%args.test_every==0:
-		trainer.test()
+# CSCE 625: Process feature extraction option
+if args.extract_features_only:
+	trainer.save_features()
+else:
+	n = 0
+	while not trainer.terminate():
+		n += 1
+		trainer.train()
+		if args.test_every!=0 and n%args.test_every==0:
+			trainer.test()

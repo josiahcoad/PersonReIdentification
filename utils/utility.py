@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import scipy.misc as misc
+import scipy.io as io
 
 import torch
 import torch.optim as optim
@@ -151,3 +152,20 @@ def make_scheduler(args, optimizer):
 
     return scheduler
 
+"""
+CSCE 625 by Jeffrey Cordero
+
+Generates output feature matrix files (.mat) and corresponding label files
+
+"""
+def save_features(
+        gallery_matrix,
+        query_matrix,
+        gallery_feature_file = 'feature_val_gallery.mat', 
+        query_feature_file = 'feature_val_query.mat'):
+
+    # Save feature matrices:
+    if gallery_feature_file:
+        io.savemat(gallery_feature_file, gallery_matrix)
+    if query_feature_file:
+        io.savemat(query_feature_file, query_matrix)

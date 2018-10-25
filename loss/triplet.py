@@ -96,3 +96,57 @@ class TripletLoss(nn.Module):
         if self.mutual:
             return loss, dist
         return loss
+
+class AlignedTripletLoss(nn.Module):
+    """
+    *** CSCE 625 ***
+    Local feature parts aligned loss 
+        - Runs feature alignment over distance matrix
+        - Uses triplet loss with hard positive/negative mining
+
+    Reference:
+    Zhang et al. AlignedReID: Surpassing Human-Level Performance in Person Re-Identification. arXiv:1711.08184.
+
+    Args:
+        margin (float): margin for triplet.
+
+    Shapes:
+        N: num_classes    
+    """
+    def __init__(self, margin=0.3):
+        super(AlignedTripletLoss, self).__init__()
+        # TODO: jeffrey
+
+    def forward(self, inputs, targets, normalize_features):
+        """
+        Args:
+            inputs: N local feature parts, shape (batch_size, feat_dim)
+            targets: ground truth labels with shape (num_classes)
+            normalize: whether to normalize the feature vectors
+        Returns:
+            loss: loss value, shape [1]
+            dist_ap: distance(anchor, positive), shape [N]
+            dist_an: distance(anchor, negative), shape [N]
+        """
+        if normalize_features:  
+            inputs = normalize(inputs, axis=-1)
+        
+        # Create distance matrix 
+        dist_mat = build_dist_matrix(inputs, inputs)
+        # TODO: rest of alignedreid alignement and loss
+
+    # Hard triplet loss function for AlignedTripletLoss
+    # TODO: jeffrey, maybe remove if able to use TripletLoss above
+    def tripletLoss():
+        return
+
+    """
+    Builds a distance table between elements in local parts
+    Args:
+
+    Returns:
+
+    """
+    def parts_dist(x, y):
+        return 
+

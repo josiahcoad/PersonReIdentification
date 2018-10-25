@@ -2,6 +2,7 @@ from data.common import list_pictures
 
 from torch.utils.data import dataset
 from torchvision.datasets.folder import default_loader
+import pdb
 
 class Market1501(dataset.Dataset):
     def __init__(self, args, transform, dtype):
@@ -57,6 +58,10 @@ class Market1501(dataset.Dataset):
         :return: person id list corresponding to dataset image paths
         """
         return [self.id(path) for path in self.imgs]
+     
+    @property
+    def names(self):
+        return [path for path in self.imgs] 
 
     @property
     def unique_ids(self):

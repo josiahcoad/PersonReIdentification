@@ -10,6 +10,11 @@ import pdb
 def make_model(args):
     return MGN(args)
 
+"""
+CSCE 625: Added support for 'Alighed Parts' branch
+    adding in support for a higher parts count (args.aligned_parts)
+    if args.used_aligned_branch is set
+"""
 class MGN(nn.Module):
     def __init__(self, args):
         super(MGN, self).__init__()
@@ -117,6 +122,26 @@ class MGN(nn.Module):
         self._init_fc(self.fc_id_256_2_1)
         self._init_fc(self.fc_id_256_2_2)
 
+        # CSCE 625: Aligned Parts Branch, initialize n-parts
+        self.fc_id_256_a = []
+        self.reduction_n = []
+        if args.use_alighed_branch:
+
+            # Ensure N is non-zero and even
+            self.N = args.aligned_parts
+            if (self.N == 0 or self.N % 2 != 0):
+                raise Exception()
+
+            self.pa = nn.Sequential(copy.deepcopy(res_conv4), copy.deepcopy(res_p_conv5))
+            self.maxpool_zpa = pool2d(kernel_size=(24 / self.N, 8))
+
+            # Initialize reduction and fully connected layers
+            for i in range(self.N):
+                self.reduction_n.append(copy.deepcopy(reduction))
+                self.fc_id_256_a.append(nn.Linear(args.feats, num_classes))
+                self._init_fc(self.fc_id_256_a[i])
+
+
     @staticmethod
     def _init_reduction(reduction):
         # conv
@@ -146,31 +171,39 @@ class MGN(nn.Module):
     
 
     def forward(self, x):
+<<<<<<< HEAD
 
         
        # x = self.stn(x)
+=======
+>>>>>>> b38dde0dc92c5376574e1d8c89a380332b422029
         
         x = self.backone(x)
         
   
 
+        # Branch output from Resnet
         p1 = self.p1(x)
         p2 = self.p2(x)
         p3 = self.p3(x)
 
+        # Global pooling for each branch
         zg_p1 = self.maxpool_zg_p1(p1)
         zg_p2 = self.maxpool_zg_p2(p2)
         zg_p3 = self.maxpool_zg_p3(p3)
 
+        # Part-2 pooling and splitting
         zp2 = self.maxpool_zp2(p2)
         z0_p2 = zp2[:, :, 0:1, :]
         z1_p2 = zp2[:, :, 1:2, :]
 
+        # Part-3 pooling and splitting
         zp3 = self.maxpool_zp3(p3)
         z0_p3 = zp3[:, :, 0:1, :]
         z1_p3 = zp3[:, :, 1:2, :]
         z2_p3 = zp3[:, :, 2:3, :]
         
+        # Global and local reductions
         fg_p1 = self.reduction_0(zg_p1).squeeze(dim=3).squeeze(dim=2)
         fg_p2 = self.reduction_1(zg_p2).squeeze(dim=3).squeeze(dim=2)
         fg_p3 = self.reduction_2(zg_p3).squeeze(dim=3).squeeze(dim=2)
@@ -195,9 +228,30 @@ class MGN(nn.Module):
         l1_p3 = self.fc_id_256_2_1(f1_p3)
         l2_p3 = self.fc_id_256_2_2(f2_p3)
 
+        # CSCE 625: Aligned Parts Branch 
+        ln_pa = []
+        if self.fc_id_256_a:
+            
+            # Create branch and local pooling
+            pa = self.pa(x)
+            zpa = self.maxpool_zpa(pa)
+
+            # Create array of locally pooled n parts
+            for i in range(self.N):
+
+                # Create next split
+                zn_pa = zpa[:, :, i:(i+1), :]
+
+                # Apply reduction
+                reduction = self.reduction_n[i]
+                fn_pa = reduction(zn_pa).squeeze(dim=3).squeeze(dim=2)
+
+                # Add fully connected portion
+                ln_pa.append(self.fc_id_256_a[i](fn_pa))
+                
         predict = torch.cat([fg_p1, fg_p2, fg_p3, f0_p2, f1_p2, f0_p3, f1_p3, f2_p3], dim=1)
 
-        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3
+        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, ln_pa
 
         
 

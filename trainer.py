@@ -5,6 +5,7 @@ import utils.utility as utility
 from scipy.spatial.distance import cdist
 from utils.functions import cmc, mean_ap
 from utils.re_ranking import re_ranking
+import pdb
 
 class Trainer():
     def __init__(self, args, model, loss, loader, ckpt):
@@ -96,6 +97,27 @@ class Trainer():
         )
         if not self.args.test_only:
             self.ckpt.save(self, epoch, is_best=((best[1][0] + 1)*self.args.test_every == epoch))
+
+    """
+    CSCE 625 by Jeffrey Cordero
+
+    Used to evaluate features from a dataset and save them as 
+    a mat file along with the corresponding labels
+    """
+    def save_features(self):
+        self.ckpt.write_log('\n[INFO] Saving Features')
+        self.model.eval()
+
+        # Generate feature matrices
+        qf = self.extract_feature(self.query_loader).numpy()
+        gf = self.extract_feature(self.test_loader).numpy()
+
+        query_dict = {'names' : self.queryset.names, 'features' : qf}
+        gallery_dict = {'names' : self.testset.names, 'features' : gf}
+
+        # Save to output files
+        utility.save_features(gallery_dict, query_dict,
+            self.args.gallery_feature_file, self.args.query_feature_file)
 
     def fliphor(self, inputs):
         inv_idx = torch.arange(inputs.size(3)-1,-1,-1).long()  # N x C x H x W
