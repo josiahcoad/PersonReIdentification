@@ -78,7 +78,7 @@ class Trainer2():
             end='' if batch+1 != len(self.train_loader) else '\n')
 
         self.loss.end_log(len(self.train_loader))
-
+        
     def test(self):
         epoch = self.scheduler.last_epoch + 1
         self.ckpt.write_log('\n[INFO] Test:')
@@ -117,9 +117,9 @@ class Trainer2():
         )
         if not self.args.test_only:
             self.ckpt.save(self, epoch, is_best=((best[1][0] + 1)*self.args.test_every == epoch))
-            
-            
-            ## test 2nd test set
+
+    def test2(self):
+        ## test 2nd test set
         epoch = self.scheduler.last_epoch + 1
         self.ckpt.write_log('\n[INFO] Test:')
         self.model.eval()
@@ -183,7 +183,10 @@ class Trainer2():
 
     def terminate(self):
         if self.args.test_only:
+            print("Testing Dataset 1")
             self.test()
+            print("Testing Dataset 2")
+            self.test2()
             return True
         else:
             epoch = self.scheduler.last_epoch + 1
