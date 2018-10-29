@@ -8,7 +8,7 @@ class DukeMTMC(dataset.Dataset):
 
         self.transform = transform
         self.loader = default_loader
-
+        
         data_path = args.datadir2
         if dtype == 'train':
             data_path += '/bounding_box_train'
