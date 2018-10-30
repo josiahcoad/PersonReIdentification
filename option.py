@@ -10,9 +10,10 @@ parser.add_argument("--datadir", type=str, default="Market-1501-v15.09.15", help
 parser.add_argument("--datadir2", type=str, default="DukeMTMC-reID", help='second dataset directory')
 parser.add_argument('--data_train', type=str, default='Market1501', help='train dataset name')
 parser.add_argument('--data_test', type=str, default='Market1501', help='test dataset name')
-parser.add_argument('--two_datasets', type=bool, default=False, help='use multiple datasets')
+parser.add_argument('--two_datasets', action='store_true', help='use multiple datasets')
 parser.add_argument('--data_train2', type = str, default='DukeMTMC', help = 'train2 dataset name')
 parser.add_argument('--data_test2', type = str, default='DukeMTMC', help = 'test2 dataset name')
+parser.add_argument('--num_classes1', type = int, default=750, help = 'test2 dataset name')
 
 parser.add_argument('--reset', action='store_true', help='reset the training')
 parser.add_argument("--epochs", type=int, default=80, help='number of epochs to train')

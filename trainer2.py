@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 from utils.functions import cmc, mean_ap
 from utils.re_ranking import re_ranking
 import pdb
+from IPython.core.debugger import set_trace
 
 class Trainer2():
     def __init__(self, args, model, loss, loader, loader2, ckpt):
@@ -80,6 +81,7 @@ class Trainer2():
         self.loss.end_log(len(self.train_loader))
         
     def test(self):
+        set_trace()
         epoch = self.scheduler.last_epoch + 1
         self.ckpt.write_log('\n[INFO] Test:')
         self.model.eval()
