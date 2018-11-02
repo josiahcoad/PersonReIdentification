@@ -18,6 +18,7 @@ CSCE 625: Added support for 'Alighed Parts' branch
 class MGN(nn.Module):
     def __init__(self, args):
         super(MGN, self).__init__()
+        self.args = args
         num_classes = args.num_classes
 
         resnet = resnet50(pretrained=True)
@@ -123,23 +124,29 @@ class MGN(nn.Module):
         self._init_fc(self.fc_id_256_2_2)
 
         # CSCE 625: Aligned Parts Branch, initialize n-parts
-        self.fc_id_256_a = []
-        self.reduction_n = []
-        if args.use_alighed_branch:
+        self.fc_id_256_a = None
+        self.reduction_n = None
+        self.N = args.aligned_parts
+        if args.use_aligned_branch:
+
+            reduction_n = []
+            fc_id_256_a = []
 
             # Ensure N is non-zero and even
-            self.N = args.aligned_parts
             if (self.N == 0 or self.N % 2 != 0):
                 raise Exception()
 
             self.pa = nn.Sequential(copy.deepcopy(res_conv4), copy.deepcopy(res_p_conv5))
-            self.maxpool_zpa = pool2d(kernel_size=(24 / self.N, 8))
+            self.maxpool_zpa = pool2d(kernel_size=(int(24 / self.N), 8))
 
             # Initialize reduction and fully connected layers
             for i in range(self.N):
-                self.reduction_n.append(copy.deepcopy(reduction))
-                self.fc_id_256_a.append(nn.Linear(args.feats, num_classes))
-                self._init_fc(self.fc_id_256_a[i])
+                reduction_n.append(copy.deepcopy(reduction))
+                fc_id_256_a.append(nn.Linear(args.feats, num_classes))
+                self._init_fc(fc_id_256_a[i])
+  
+            self.reduction_n = nn.ModuleList(reduction_n)
+            self.fc_id_256_a = nn.ModuleList(fc_id_256_a)
 
 
     @staticmethod
@@ -171,13 +178,8 @@ class MGN(nn.Module):
     
 
     def forward(self, x):
-<<<<<<< HEAD
 
-        
-       # x = self.stn(x)
-=======
->>>>>>> b38dde0dc92c5376574e1d8c89a380332b422029
-        
+        # x = self.stn(x)
         x = self.backone(x)
         
   
@@ -228,8 +230,11 @@ class MGN(nn.Module):
         l1_p3 = self.fc_id_256_2_1(f1_p3)
         l2_p3 = self.fc_id_256_2_2(f2_p3)
 
-        # CSCE 625: Aligned Parts Branch 
-        ln_pa = []
+        # CSCE 625: Aligned Parts Branch
+        batch_size = l0_p2.shape[0] 
+        # ln_pa = torch.Tensor(self.N, batch_size, 751)
+        fn_pa = torch.Tensor(self.N, batch_size, self.args.feats)
+        fn_pa_t = torch.Tensor(batch_size, self.N, self.args.feats)
         if self.fc_id_256_a:
             
             # Create branch and local pooling
@@ -244,15 +249,19 @@ class MGN(nn.Module):
 
                 # Apply reduction
                 reduction = self.reduction_n[i]
-                fn_pa = reduction(zn_pa).squeeze(dim=3).squeeze(dim=2)
+                # fn_pa = reduction(zn_pa).squeeze(dim=3).squeeze(dim=2)
+                fn_pa[i] = reduction(zn_pa).squeeze(dim=3).squeeze(dim=2)
 
                 # Add fully connected portion
-                ln_pa.append(self.fc_id_256_a[i](fn_pa))
-                
+                # ln_pa[i] = self.fc_id_256_a[i](fn_pa)
+            fn_pa_t = fn_pa.transpose(0, 1)
+
+        # pdb.set_trace()
         predict = torch.cat([fg_p1, fg_p2, fg_p3, f0_p2, f1_p2, f0_p3, f1_p3, f2_p3], dim=1)
 
-        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, ln_pa
+        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, fn_pa_t
 
         
+
 
 

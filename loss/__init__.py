@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-from loss.triplet import TripletLoss, TripletSemihardLoss, AlignedTripletLoss
+from loss.triplet import TripletLoss, TripletSemihardLoss, AlignedTripletLoss, TripletLoss2
 
 class Loss(nn.modules.loss._Loss):
     def __init__(self, args, ckpt):
@@ -28,7 +28,8 @@ class Loss(nn.modules.loss._Loss):
                 loss_function = TripletLoss(args.margin)
             # CSCE 625: Aligned loss evaluation for aligned features
             elif loss_type == 'AlignedTriplet':
-                loss_function = AlignedTripletLoss()
+                tri_loss = TripletLoss2(margin=0.3)
+                loss_function = AlignedTripletLoss(tri_loss)
 
             self.loss.append({
                 'type': loss_type,
@@ -68,7 +69,7 @@ class Loss(nn.modules.loss._Loss):
                 loss = [l['function'](output, labels) for output in outputs[4:-2]]
             # CSCE 625: Aligned Parts Branch Loss
             elif self.args.model == 'MGN' and l['type'] == 'AlignedTriplet':
-                loss = l['function'](outputs[-1], labels)
+                loss = [l['function'](outputs[-1], labels)]
             else:
                 continue
 
