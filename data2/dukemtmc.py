@@ -8,7 +8,7 @@ class DukeMTMC(dataset.Dataset):
 
         self.transform = transform
         self.loader = default_loader
-
+        
         data_path = args.datadir2
         if dtype == 'train':
             data_path += '/bounding_box_train'
@@ -20,7 +20,7 @@ class DukeMTMC(dataset.Dataset):
         
         self.imgs = [path for path in list_pictures(data_path) if self.id(path) != -1]
 
-        self._id2label = {_id: idx for idx, _id in enumerate(self.unique_ids)}
+        self._id2label = {_id: args.num_classes1 + idx for idx, _id in enumerate(self.unique_ids)}
 
     def __getitem__(self, index):
         path = self.imgs[index]

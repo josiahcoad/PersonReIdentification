@@ -15,7 +15,7 @@ loader = data.Data(args)
 model = model.Model(args, ckpt)
 loss = loss.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
 if args.two_datasets:
-    loader2 = data2.Data(args)
+    loader2 = data2.Data2(args)
     trainer = Trainer2(args, model, loss, loader, loader2, ckpt)
 else:
     trainer = Trainer(args, model, loss, loader, ckpt)

@@ -178,11 +178,9 @@ class MGN(nn.Module):
     
 
     def forward(self, x):
-
+        
         # x = self.stn(x)
         x = self.backone(x)
-        
-  
 
         # Branch output from Resnet
         p1 = self.p1(x)
