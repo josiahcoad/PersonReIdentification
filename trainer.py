@@ -46,7 +46,15 @@ class Trainer():
             labels = labels.to(self.device)
 
             self.optimizer.zero_grad()
+            # outputs in the market dataset is a tuple of 13 tensor of the following sizes:
+            # 1: 32 X 2048 (concatonated features) (used for testing)
+            # 4: 32 X 256 (used for backprop)
+            # 8: 32 X 14718 (used for backprop)
             outputs = self.model(inputs)
+            # labels is a vector<int> of indices (shape 32 (batchsize) ?) of the images
+            # what the output encoding for an image was and then tell the loss what the
+            # output encoding should have been, given the labels. If the loss knows the 
+            # ground truth encoding of the identity, then it can compare.
             loss = self.loss(outputs, labels)
             loss.backward()
             self.optimizer.step()
@@ -65,21 +73,33 @@ class Trainer():
         self.model.eval()
 
         self.ckpt.add_log(torch.zeros(1, 5))
+        # get the encodings/features for the query dataset
+        # the result size for example in the market query dataset
+        # is 3368 X 2048 since there are 3368 query photos
         qf = self.extract_feature(self.query_loader).numpy()
+        # get the encodings/features for the query dataset
+        # the result size for example in the market gallery dataset
+        # is 15913 X 2048 since there are 15913 gallery photos
         gf = self.extract_feature(self.test_loader).numpy()
 
         if self.args.re_rank:
             q_g_dist = np.dot(qf, np.transpose(gf))
             q_q_dist = np.dot(qf, np.transpose(qf))
             g_g_dist = np.dot(gf, np.transpose(gf))
+            # dist will end up being a 2D matrix of size #query_photos X #gallery_photos
+            # in case of market, this is 3368 X 15913
+            # thus, dist[0][0] is the distance between query_photo[0] to gallery_photo[0]
             dist = re_ranking(q_g_dist, q_q_dist, g_g_dist)
         else:
+            # each image is represented by a vector of size 2048 which are its "features/encoding"
+            # distance is calculated here using euclidian distances between the cross product
+            # of each query image with each gallery image
             dist = cdist(qf, gf)
         r = cmc(dist, self.queryset.ids, self.testset.ids, self.queryset.cameras, self.testset.cameras,
                 separate_camera_set=False,
                 single_gallery_shot=False,
                 first_match_break=True)
-        m_ap = mean_ap(dist, self.queryset.ids, self.testset.ids, self.queryset.cameras, self.testset.cameras)
+        m_ap = mean_ap(dist, epoch, self.queryset.ids, self.testset.ids, self.queryset.cameras, self.testset.cameras)
 
         self.ckpt.log[-1, 0] = m_ap
         self.ckpt.log[-1, 1] = r[0]
