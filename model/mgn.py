@@ -2,6 +2,7 @@ import copy
 
 import torch
 from torch import nn
+import torch.nn.init as init
 import torch.nn.functional as F
 
 from torchvision.models.resnet import resnet50, Bottleneck
@@ -148,6 +149,12 @@ class MGN(nn.Module):
             self.reduction_n = nn.ModuleList(reduction_n)
             self.fc_id_256_a = nn.ModuleList(fc_id_256_a)
 
+        # CSCE 625: Use mutual learning (extact logits)
+        if args.mutual_learning:
+            self.fc_ml = nn.Linear(2048, num_classes)
+            init.normal_(self.fc_ml.weight, std=0.001)
+            init.constant_(self.fc_ml.bias, 0)
+
 
     @staticmethod
     def _init_reduction(reduction):
@@ -254,10 +261,15 @@ class MGN(nn.Module):
                 # ln_pa[i] = self.fc_id_256_a[i](fn_pa)
             fn_pa_t = fn_pa.transpose(0, 1)
 
+        logits = None
+        if hasattr(self, 'fc_ml'):
+            # logits = self.fc_ml(l_p1)
+            logits = l_p1
+
         # pdb.set_trace()
         predict = torch.cat([fg_p1, fg_p2, fg_p3, f0_p2, f1_p2, f0_p3, f1_p3, f2_p3], dim=1)
 
-        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, fn_pa_t
+        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, fn_pa_t, logits
 
         
 

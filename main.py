@@ -12,13 +12,21 @@ import utils.utility as utility
 ckpt = utility.checkpoint(args)
 
 loader = data.Data(args)
-model = model.Model(args, ckpt)
-loss = loss.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
+loss1 = loss.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
+
+models = [model.Model(args, ckpt)]
+losses = [loss1]
+if args.mutual_learning:
+    models.append(model.Model(args, ckpt))
+    loss2 = loss.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
+    losses.append(loss2)
+
+
 if args.two_datasets:
     loader2 = data2.Data2(args)
-    trainer = Trainer2(args, model, loss, loader, loader2, ckpt)
+    trainer = Trainer2(args, models[0], losses[0], loader, loader2, ckpt)
 else:
-    trainer = Trainer(args, model, loss, loader, ckpt)
+    trainer = Trainer(args, models, losses, loader, ckpt)
     
 # CSCE 625: Process feature extraction option
 if args.extract_features_only:

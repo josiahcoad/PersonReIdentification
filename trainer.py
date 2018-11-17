@@ -6,9 +6,10 @@ from scipy.spatial.distance import cdist
 from utils.functions import cmc, mean_ap
 from utils.re_ranking import re_ranking
 import pdb
+import copy
 
 class Trainer():
-    def __init__(self, args, model, loss, loader, ckpt):
+    def __init__(self, args, models, losses, loader, ckpt):
         self.args = args
         self.train_loader = loader.train_loader
         self.test_loader = loader.test_loader
@@ -17,13 +18,19 @@ class Trainer():
         self.queryset = loader.queryset
 
         self.ckpt = ckpt
-        self.model = model
-        self.loss = loss
+        self.loss = losses[0]
+        self.model = models[0]
         self.lr = 0.
         self.optimizer = utility.make_optimizer(args, self.model)
         self.scheduler = utility.make_scheduler(args, self.optimizer)
         self.device = torch.device('cpu' if args.cpu else 'cuda')
 
+        # Configure second model for mutual learning
+        if args.mutual_learning:
+            self.model2 = models[1]
+            self.loss2 = losses[1]
+            self.optimizer2 = utility.make_optimizer(args, self.model2)
+        
         if args.load != '':
             self.optimizer.load_state_dict(
                 torch.load(os.path.join(ckpt.dir, 'optimizer.pt'))
@@ -33,6 +40,9 @@ class Trainer():
     def train(self):
         self.scheduler.step()
         self.loss.step()
+        if hasattr(self, 'loss2'):
+            self.loss2.step()
+
         epoch = self.scheduler.last_epoch + 1
         lr = self.scheduler.get_lr()[0]
         if lr != self.lr:
@@ -45,11 +55,27 @@ class Trainer():
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
 
+            # Feed images through the model and compute losses
+            outputs = []
+            outputs.append(self.model(inputs))
+            if hasattr(self, 'model2'):
+                outputs.append(self.model2(inputs))
+                loss, loss2 = self.loss(outputs, labels)
+            else:
+                loss = self.loss(outputs, labels)
+
+            # Back prop
+            
             self.optimizer.zero_grad()
-            outputs = self.model(inputs)
-            loss = self.loss(outputs, labels)
-            loss.backward()
+            loss.backward(retain_graph=True)
             self.optimizer.step()
+ 
+            
+            if hasattr(self, 'model2'):
+                self.optimizer2.zero_grad()
+                loss2.backward()
+                self.optimizer2.step()
+                print('loss: ', loss, ', loss2: ', loss2)
 
             self.ckpt.write_log('\r[INFO] [{}/{}]\t{}/{}\t{}'.format(
                 epoch, self.args.epochs,

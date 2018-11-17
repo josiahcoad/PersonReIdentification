@@ -8,8 +8,11 @@ import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from loss.triplet import TripletLoss, TripletSemihardLoss, AlignedTripletLoss, TripletLoss2
+
+import pdb
 
 class Loss(nn.modules.loss._Loss):
     def __init__(self, args, ckpt):
@@ -30,13 +33,30 @@ class Loss(nn.modules.loss._Loss):
             elif loss_type == 'AlignedTriplet':
                 tri_loss = TripletLoss2(margin=0.3)
                 loss_function = AlignedTripletLoss(tri_loss)
-
+            
             self.loss.append({
                 'type': loss_type,
                 'weight': float(weight),
                 'function': loss_function
                 })
             
+        # CSCE 625: Mutual Learning
+        if args.mutual_learning:
+            self.ml_pm_weight = 1.0
+            self.ml_global_weight = 0.0
+            self.ml_local_weight = 1.0
+            # self.loss.append({
+            #     'type': 'ProbabilityML',
+            #     'weight': 1.0
+            #     })
+            # self.loss.append({
+            #     'type': 'GlobalML',
+            #     'weight': 0.0 # TODO: update after implementation
+            #     })
+            # self.loss.append({
+            #     'type': 'LocalML',
+            #     'weight': 0.0 # TODO: update after implementation
+            #     })
 
         if len(self.loss) > 1:
             self.loss.append({'type': 'Total', 'weight': 0, 'function': None})
@@ -48,8 +68,8 @@ class Loss(nn.modules.loss._Loss):
 
         self.log = torch.Tensor()
 
-        device = torch.device('cpu' if args.cpu else 'cuda')
-        self.loss_module.to(device)
+        self.device = torch.device('cpu' if args.cpu else 'cuda')
+        self.loss_module.to(self.device)
         
         if args.load != '': self.load(ckpt.dir, cpu=args.cpu)
         if not args.cpu and args.nGPU > 1:
@@ -57,32 +77,78 @@ class Loss(nn.modules.loss._Loss):
                 self.loss_module, range(args.nGPU)
             )
 
-    def forward(self, outputs, labels):
+    def forward(self, outputs_vec, labels):
 
-        losses = []
-        for i, l in enumerate(self.loss):
-            # Triplet loss 
-            if self.args.model == 'MGN' and l['type'] == 'Triplet':
-                loss = [l['function'](output, labels) for output in outputs[1:4]]
-            # Cross Entropy loss
-            elif self.args.model == 'MGN' and l['type'] == 'CrossEntropy':
-                loss = [l['function'](output, labels) for output in outputs[4:-2]]
-            # CSCE 625: Aligned Parts Branch Loss
-            elif self.args.model == 'MGN' and l['type'] == 'AlignedTriplet':
-                loss = [l['function'](outputs[-1], labels)]
-            else:
-                continue
+        loss_sums = [0] * 2
+        local_dist_mats = [[]] * 2
 
-            loss = sum(loss) / len(loss)
-            effective_loss = l['weight'] * loss
-            losses.append(effective_loss)
-            self.log[-1, i] += effective_loss.item()
+        # Compute loss_sum of each model loss
+        for index in range(len(outputs_vec)):
+            losses = []
+            for i, l in enumerate(self.loss):
+                # Triplet loss 
+                if self.args.model == 'MGN' and l['type'] == 'Triplet':
+                    loss = [l['function'](output, labels) for output in outputs_vec[index][1:4]]
+                # Cross Entropy loss
+                elif self.args.model == 'MGN' and l['type'] == 'CrossEntropy':
+                    loss = [l['function'](output, labels) for output in outputs_vec[index][4:-3]]
+                # CSCE 625: Aligned Parts Branch Loss
+                elif self.args.model == 'MGN' and l['type'] == 'AlignedTriplet':
+                    loss, dist_mat = l['function'](outputs_vec[index][-2], labels)
+                    local_dist_mats[index] = dist_mat.to(self.device)
+                    loss = [loss]
+                else:
+                    continue
 
-        loss_sum = sum(losses)
-        if len(self.loss) > 1:
-            self.log[-1, -1] += loss_sum.item()
+                loss = sum(loss) / len(loss)
+                effective_loss = l['weight'] * loss
+                losses.append(effective_loss)
+                if index == 0:
+                    self.log[-1, i] += effective_loss.item()
+        
+            loss_sum = sum(losses)
+            loss_sums[index] = loss_sum
+            if index == 0 and len(self.loss) > 1:
+                self.log[-1, -1] += loss_sum.item()
 
-        return loss_sum
+        # Not using mutual learning
+        if len(outputs_vec) == 1:
+            return loss_sums[0]
+
+        # --- Using mutual learning (CSCE 625) ---
+
+        # Compute mutual learning losses
+        imgs = float(self.args.batchid)
+        ml_pm_loss = [0] * 2
+        ml_global_loss = [0] * 2
+        ml_local_loss = [0] * 2
+        
+        # Probability mutual Loss
+        probs = [0] * 2
+        log_probs = [0] * 2
+        probs[0] = F.softmax(outputs_vec[0][-1], dim=1)
+        probs[1] = F.softmax(outputs_vec[1][-1], dim=1)
+        log_probs[0] = F.log_softmax(outputs_vec[0][-1], dim=1)
+        log_probs[1] = F.log_softmax(outputs_vec[1][-1], dim=1)
+        
+        ml_pm_loss[0] = F.kl_div(log_probs[0], probs[1], False) / imgs
+        ml_pm_loss[1] = F.kl_div(log_probs[1], probs[0], False) / imgs
+        
+        # Local mutual loss
+        ml_local_loss[0] = torch.sum(torch.pow(
+            local_dist_mats[0] - local_dist_mats[1], 2)) \
+            / (imgs * imgs)
+        ml_local_loss[1] = torch.sum(torch.pow(
+            local_dist_mats[1] - local_dist_mats[0], 2)) \
+            / (imgs * imgs)
+
+        for i in range(2):
+            loss_sums[i] += \
+                ml_pm_loss[i] * self.ml_pm_weight \
+                + ml_global_loss[i] * self.ml_global_weight \
+                + ml_local_loss[i] * self.ml_local_weight
+        
+        return loss_sums[0], loss_sums[1]
 
     def start_log(self):
         self.log = torch.cat((self.log, torch.zeros(1, len(self.loss))))
