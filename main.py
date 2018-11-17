@@ -7,6 +7,7 @@ from trainer import Trainer
 from trainer2 import Trainer2
 
 from option import args
+# from args import args
 import utils.utility as utility
 
 ckpt = utility.checkpoint(args)

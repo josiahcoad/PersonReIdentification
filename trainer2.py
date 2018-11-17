@@ -101,7 +101,7 @@ class Trainer2():
                 separate_camera_set=False,
                 single_gallery_shot=False,
                 first_match_break=True)
-        m_ap = mean_ap(dist, self.queryset.ids, self.testset.ids, self.queryset.cameras, self.testset.cameras)
+        m_ap = mean_ap(dist, epoch, self.queryset.ids, self.testset.ids, self.queryset.cameras, self.testset.cameras)
 
         self.ckpt.log[-1, 0] = m_ap
         self.ckpt.log[-1, 1] = r[0]
@@ -141,7 +141,7 @@ class Trainer2():
                 separate_camera_set=False,
                 single_gallery_shot=False,
                 first_match_break=True)
-        m_ap = mean_ap(dist, self.queryset2.ids, self.testset2.ids, self.queryset2.cameras, self.testset2.cameras)
+        m_ap = mean_ap(dist, epoch, self.queryset2.ids, self.testset2.ids, self.queryset2.cameras, self.testset2.cameras)
 
         self.ckpt.log[-1, 0] = m_ap
         self.ckpt.log[-1, 1] = r[0]
