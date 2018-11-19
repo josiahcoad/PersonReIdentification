@@ -68,6 +68,8 @@ parser.add_argument('--extract_features_only', action='store_true', help='only e
 parser.add_argument('--gallery_feature_file', type=str, default='feature_val_gallery.mat')
 parser.add_argument('--query_feature_file', type=str, default='feature_val_query.mat')
 
+parser.add_argument('--mutual_learning', action='store_true')
+
 # parser.add_argument('--gallery_labels_file', type=str, default='galleryInfo.txt')
 # parser.add_argument('--query_labels_file', type=str, default='queryInfo.txt')
 

@@ -175,7 +175,7 @@ class AlignedTripletLoss(nn.Module):
         dist_ap, dist_an = self.hard_example_mining(dist_mat, labels, return_inds=False)
         loss = self.tri_loss(dist_ap, dist_an)
         loss = loss.to(0)
-        return loss #, dist_ap, dist_an, dist_mat
+        return (loss, dist_mat) #, dist_ap, dist_an, dist_mat
 
     def local_dist(self, x, y):
         """
