@@ -3,7 +3,7 @@ class Args():
         self.nThread = 2
         self.nGPU = 1
         self.cpu = False
-        self.datadir = '../personOld/market'
+        self.datadir = 'market'
         self.datadir2 = 'data_dir/DukeMTMC-reID'
         self.data_train = 'Market1501'
         self.data_test = 'Market1501'
@@ -12,8 +12,9 @@ class Args():
         self.data_test2 = 'DukeMTMC'
         self.reset = False
         self.epochs = 400
-        self.test_every = 1
-        self.batchid = 8
+        self.test_every = 50
+        self.batchid = 4
+        self.batchimage = 4
         self.batchtest = 16
         self.test_only = False
         self.model = 'MGN'
@@ -49,13 +50,10 @@ class Args():
         self.load = ''
         self.decay_type = 'step'
         self.extract_features_only = False
-        self.batchimage = 4
-        self.cpu = True
-        self.use_alighed_branch = False
-        self.aligned_parts = 3
         self.use_aligned_branch = False
+        self.aligned_parts = 3
         self.resume = 0
         self.verbose = True
-
+        self.mutual_learning = False
 
 args = Args()
