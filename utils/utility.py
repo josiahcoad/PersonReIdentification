@@ -97,8 +97,12 @@ class checkpoint():
         pass
 
 def make_optimizer(args, model):
-    trainable = filter(lambda x: x.requires_grad, model.parameters())
-
+    if args.train_stn_only:
+        trainable = [{'params' : model.model.fc_loc.parameters()}, {'params' : model.model.localization.parameters()}]
+    else:
+        trainable = filter(lambda x: x.requires_grad, model.parameters())
+        
+        
     if args.optimizer == 'SGD':
         optimizer_function = optim.SGD
         kwargs = {
