@@ -21,7 +21,7 @@ class Trainer2():
         self.query_loader2 = loader2.query_loader
         self.testset2 = loader2.testset
         self.queryset2 = loader2.queryset
-
+        self.losses = []
         self.ckpt = ckpt
         self.model = model
         self.loss = loss
@@ -37,26 +37,30 @@ class Trainer2():
             for _ in range(len(ckpt.log)*args.test_every): self.scheduler.step()
 
     def train(self):
-        self.scheduler.step()
         self.loss.step()
         epoch = self.scheduler.last_epoch + 1
-        lr = self.scheduler.get_lr()[0]
+        try:
+            lr = self.scheduler.get_lr()[0]
+        except:
+            lr = self.lr
         if lr != self.lr:
             self.ckpt.write_log('[INFO] Epoch: {}\tLearning rate: {:.2e}'.format(epoch, lr))
             self.lr = lr
         self.loss.start_log()
         self.model.train()
-
+        total_loss = 0
         for batch, ((inputs, labels),(inputs2,labels2)) in enumerate(zip(self.train_loader, self.train_loader2)):
+            
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = self.loss(outputs, labels)
+            total_loss += loss
             loss.backward()
             self.optimizer.step()
-
+            
             self.ckpt.write_log('\r[INFO] [{}/{}]\t{}/{}\t{}'.format(
                 epoch, self.args.epochs,
                 batch + 1, len(self.train_loader),
@@ -69,6 +73,7 @@ class Trainer2():
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = self.loss(outputs, labels)
+            total_loss += loss
             loss.backward()
             self.optimizer.step()
 
@@ -77,7 +82,17 @@ class Trainer2():
                 batch + 1, len(self.train_loader),
                 self.loss.display_loss(batch)), 
             end='' if batch+1 != len(self.train_loader) else '\n')
-
+            
+        self.losses.append(total_loss)
+        
+        if self.args.save_on_min_loss:
+            if min(self.losses) == total_loss:
+                torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '_' + str(epoch) + '.pt')
+        
+        if self.args.decay_type == 'reduce_on_plateau':
+            self.scheduler.step(total_loss)
+        else:
+            self.scheduler.step()
         self.loss.end_log(len(self.train_loader))
         
     def test(self):

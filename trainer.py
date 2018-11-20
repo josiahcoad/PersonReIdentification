@@ -16,7 +16,7 @@ class Trainer():
         self.query_loader = loader.query_loader
         self.testset = loader.testset
         self.queryset = loader.queryset
-
+        self.losses()
         self.ckpt = ckpt
         self.loss = loss
         self.model = models[0]
@@ -37,7 +37,6 @@ class Trainer():
             for _ in range(len(ckpt.log)*args.test_every): self.scheduler.step()
 
     def train(self):
-        self.scheduler.step()
         self.loss.step()
         # ----------------------------------------------------
         # CSCE 625: Code to switch out the loss function after half way through epochs
@@ -75,9 +74,11 @@ class Trainer():
             if hasattr(self, 'model2'):
                 outputs.append(self.model2(inputs))
                 loss, loss2 = self.loss(outputs, labels)
+                total_loss += loss2
             else:
                 loss = self.loss(outputs, labels)
-
+            
+            total_loss += loss
             # Back prop
             self.optimizer.zero_grad()
             loss.backward(retain_graph=True)
@@ -93,7 +94,16 @@ class Trainer():
                 batch + 1, len(self.train_loader),
                 self.loss.display_loss(batch)), 
             end='' if batch+1 != len(self.train_loader) else '\n')
+            
+        if self.args.save_on_min_loss:
+            if min(self.losses) == total_loss:
+                torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '_' + str(epoch) + '.pt')
+        
 
+        if self.args.decay_type == 'reduce_on_plateau':
+            self.scheduler.step(total_loss)
+        else:
+            self.scheduler.step()
         self.loss.end_log(len(self.train_loader))
 
     def test(self):

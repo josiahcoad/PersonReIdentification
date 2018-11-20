@@ -153,7 +153,10 @@ def make_scheduler(args, optimizer):
             milestones=milestones,
             gamma=args.gamma
         )
-
+        
+    elif args.decay_type == 'reduce_on_plateau':
+        scheduler = lrs.ReduceLROnPlateau(optimizer,patience=0, factor = args.gamma, verbose = True)
+  
     return scheduler
 
 """
