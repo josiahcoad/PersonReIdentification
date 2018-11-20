@@ -18,7 +18,8 @@ class Args():
         self.batchtest = 16
         self.test_only = False
         self.model = 'MGN'
-        self.loss = '1*CrossEntropy+1*Triplet'
+        self.loss = '1*CrossEntropy+2*Mixed-Triplet-TripletSemihard'
+        self.switch_loss_every = 100
         self.act = 'relu'
         self.pool = 'avg'
         self.feats = 256

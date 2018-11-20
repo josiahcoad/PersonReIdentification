@@ -5,6 +5,7 @@ from importlib import import_module
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from itertools import cycle
 
 import torch
 import torch.nn as nn
@@ -23,6 +24,18 @@ class Loss(nn.modules.loss._Loss):
         self.args = args
         self.loss = []
         self.loss_module = nn.ModuleList()
+        self.circular_mixed_loss_queue = None
+        mixed_subloss_options = {
+            'TripletSemihard': {
+                'function': TripletSemihardLoss(torch.device('cpu' if args.cpu else 'cuda'), args.margin),
+                'subtype': 'TripletSemihard'
+            },
+            'Triplet': {
+                'function': TripletLoss(args.margin),
+                'subtype': 'Triplet'
+            }
+        }
+        subtype = ''
         for loss in args.loss.split('+'):
             weight, loss_type = loss.split('*')
             if loss_type == 'CrossEntropy':
@@ -33,12 +46,28 @@ class Loss(nn.modules.loss._Loss):
             elif loss_type == 'AlignedTriplet':
                 tri_loss = TripletLoss2(margin=0.3)
                 loss_function = AlignedTripletLoss(tri_loss)
-            
+            # ------------ BELOW CODE FOR CSCE 625 ---------------
+            # Allow a mixed loss function for the training...
+            # switch out loss functions after a fixed number of epochs
+            # set in args
+            elif loss_type.startswith('Mixed'):
+                print("Will cycle loss functions {} every {} epochs."\
+                    .format(repr(loss_type.split('-')[1:]), self.args.switch_loss_every))
+                self.circular_mixed_loss_queue = cycle(
+                    mixed_subloss_options[l] for l in loss_type.split('-')[1:])
+                # also append other loss functions to be used in the mix
+                l = next(self.circular_mixed_loss_queue)
+                loss_function = l['function']
+                subtype = l['subtype']
+                loss_type = 'Mixed'
+            # ----------------------------------------------------
             self.loss.append({
                 'type': loss_type,
                 'weight': float(weight),
-                'function': loss_function
+                'function': loss_function,
+                'subtype': subtype
                 })
+            subtype = ''
             
         # CSCE 625: Mutual Learning
         if args.mutual_learning:
@@ -82,6 +111,16 @@ class Loss(nn.modules.loss._Loss):
         if args.mutual_learning:
             self.log.append(torch.Tensor())
 
+    def swap_mixed_loss(self):
+        is_mixed = lambda x: x['type'] == 'Mixed'
+        old_mixed = next(filter(is_mixed, self.loss), None)
+        if old_mixed: # if we have a mixed loss function...
+            new_mixed = {**old_mixed, **next(self.circular_mixed_loss_queue)}
+            print("Changing loss from type {} to type {}".format(
+                old_mixed['subtype'], new_mixed['subtype']))
+            # swap out the old mixed for the new
+            self.loss = [l if not is_mixed(l) else new_mixed for l in self.loss]
+
     def forward(self, outputs_vec, labels):
 
         loss_sums = [0] * 2
@@ -102,6 +141,9 @@ class Loss(nn.modules.loss._Loss):
                     loss, dist_mat = l['function'](outputs_vec[index][-2], labels)
                     local_dist_mats[index] = dist_mat.to(self.device)
                     loss = [loss]
+                # CSCE 625: Mixed Loss Functions
+                elif self.args.model == 'MGN' and l['type'] == 'Mixed':
+                    loss = [l['function'](output, labels) for output in outputs_vec[index][1:4]]
                 else:
                     continue
 
@@ -185,7 +227,8 @@ class Loss(nn.modules.loss._Loss):
 
         # Log for first loss
         for l, c in zip(self.loss, self.log[0][-1]):
-            log.append('[{}: {:.4f}]'.format(l['type'], c / n_samples))
+            subtype = '~' + l['subtype'] if l.get('subtype', '') else ''
+            log.append('[{}: {:.4f}]'.format(l['type']+subtype, c / n_samples))
 
         if self.args.mutual_learning:
             log.append('  loss2: ')

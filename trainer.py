@@ -39,16 +39,23 @@ class Trainer():
     def train(self):
         self.scheduler.step()
         self.loss.step()
-
+        # ----------------------------------------------------
+        # CSCE 625: Code to switch out the loss function after half way through epochs
+        # (only effective if using mixed loss)
         epoch = self.scheduler.last_epoch + 1
-        lr = self.scheduler.get_lr()[0]
+        if epoch % self.args.switch_loss_every == 0:
+            self.loss.swap_mixed_loss()
+        try:
+            lr = self.scheduler.get_lr()[0]
+        except:
+            lr = self.lr
         if lr != self.lr:
             self.ckpt.write_log('[INFO] Epoch: {}\tLearning rate: {:.2e}'.format(epoch, lr))
             self.lr = lr
         self.loss.start_log()
         self.model.train()
-
-        for batch, (inputs, labels) in enumerate(self.train_loader):
+        total_loss = 0
+        for batch, (inputs, labels) in enumerate(self.train_loader): 
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
 
