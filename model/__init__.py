@@ -69,11 +69,11 @@ class Model(nn.Module):
             )
         elif resume == 0:
             if pre_train != '':
-                print('Loading model from {}'.format(pre_train))
-                self.get_model().load_state_dict(
-                    torch.load(pre_train, **kwargs),
-                    strict=False
-                )
+                model_state = self.model.state_dict()
+                pretrained_state = torch.load(pre_train)
+                pretrained_state = { k:v for k,v in pretrained_state.items() if k in model_state and v.size() == model_state[k].size() }
+                model_state.update(pretrained_state)
+                self.model.load_state_dict(model_state)  
         else:
             self.get_model().load_state_dict(
                 torch.load(

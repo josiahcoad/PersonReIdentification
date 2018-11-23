@@ -16,7 +16,7 @@ class Trainer():
         self.query_loader = loader.query_loader
         self.testset = loader.testset
         self.queryset = loader.queryset
-        self.losses()
+        self.losses = []
         self.ckpt = ckpt
         self.loss = loss
         self.model = models[0]
