@@ -89,7 +89,7 @@ class Trainer2():
         if self.args.save_on_min:
             if min(self.losses) == total_loss:
                 os.makedirs('models', exist_ok=True)
-                torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '_' + str(epoch) + '.pt')
+                torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '.pt')
         
         if self.args.decay_type == 'reduce_on_plateau':
             self.scheduler.step(total_loss)
