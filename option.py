@@ -67,7 +67,7 @@ parser.add_argument('--num_classes1', type = int, default=750, help = 'test2 dat
 
 parser.add_argument('--train_stn_only', action='store_true', help='train spatial transformer only')
 parser.add_argument('--use_stn', action='store_true', help='use the spatial transformer network')
-
+parser.add_argument('--save_on_min', action='store_true', help='save on min loss')
 
 parser.add_argument('--use_aligned_branch', action='store_true', help='whether to use the optional aligned-parts branch')
 parser.add_argument('--aligned_parts', type=int, default=0, help='number of local parts for aligned branch (set --use_aligned_branch also)')

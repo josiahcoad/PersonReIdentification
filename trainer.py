@@ -7,6 +7,7 @@ from utils.functions import cmc, mean_ap
 from utils.re_ranking import re_ranking
 import pdb
 import copy
+import os
 
 class Trainer():
     def __init__(self, args, models, loss, loader, ckpt):
@@ -95,7 +96,8 @@ class Trainer():
                 self.loss.display_loss(batch)), 
             end='' if batch+1 != len(self.train_loader) else '\n')
             
-        if self.args.save_on_min_loss:
+        if self.args.save_on_min:
+            os.makedirs('models', exist_ok=True)
             if min(self.losses) == total_loss:
                 torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '_' + str(epoch) + '.pt')
         

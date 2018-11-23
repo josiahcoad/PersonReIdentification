@@ -7,6 +7,7 @@ from utils.functions import cmc, mean_ap
 from utils.re_ranking import re_ranking
 import pdb
 from IPython.core.debugger import set_trace
+import os
 
 class Trainer2():
     def __init__(self, args, model, loss, loader, loader2, ckpt):
@@ -85,8 +86,9 @@ class Trainer2():
             
         self.losses.append(total_loss)
         
-        if self.args.save_on_min_loss:
+        if self.args.save_on_min:
             if min(self.losses) == total_loss:
+                os.makedirs('models', exist_ok=True)
                 torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '_' + str(epoch) + '.pt')
         
         if self.args.decay_type == 'reduce_on_plateau':
