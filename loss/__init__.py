@@ -60,6 +60,7 @@ class Loss(nn.modules.loss._Loss):
                 loss_function = l['function']
                 subtype = l['subtype']
                 loss_type = 'Mixed'
+            
             # ----------------------------------------------------
             self.loss.append({
                 'type': loss_type,
@@ -135,15 +136,15 @@ class Loss(nn.modules.loss._Loss):
                     loss = [l['function'](output, labels) for output in outputs_vec[index][1:4]]
                 # Cross Entropy loss
                 elif self.args.model == 'MGN' and l['type'] == 'CrossEntropy':
-                    loss = [l['function'](output, labels) for output in outputs_vec[index][4:-3]]
+                    loss = [l['function'](output, labels) for output in outputs_vec[index][4:-2]]
                 # CSCE 625: Aligned Parts Branch Loss
                 elif self.args.model == 'MGN' and l['type'] == 'AlignedTriplet':
-                    loss, dist_mat = l['function'](outputs_vec[index][-2], labels)
+                    loss, dist_mat = l['function'](outputs_vec[index][-1], labels)
                     local_dist_mats[index] = dist_mat.to(self.device)
                     loss = [loss]
                 # CSCE 625: Mixed Loss Functions
-                elif self.args.model == 'MGN' and l['type'] == 'Mixed':
-                    loss = [l['function'](output, labels) for output in outputs_vec[index][1:4]]
+                # elif self.args.model == 'MGN' and l['type'] == 'Mixed':
+                 #   loss = [l['function'](output, labels) for output in outputs_vec[index][1:4]]
                 else:
                     continue
 
@@ -172,10 +173,10 @@ class Loss(nn.modules.loss._Loss):
         # Probability mutual Loss
         probs = [0] * 2
         log_probs = [0] * 2
-        probs[0] = F.softmax(outputs_vec[0][-1], dim=1)
-        probs[1] = F.softmax(outputs_vec[1][-1], dim=1)
-        log_probs[0] = F.log_softmax(outputs_vec[0][-1], dim=1)
-        log_probs[1] = F.log_softmax(outputs_vec[1][-1], dim=1)
+        probs[0] = F.softmax(outputs_vec[0][4], dim=1)
+        probs[1] = F.softmax(outputs_vec[1][4], dim=1)
+        log_probs[0] = F.log_softmax(outputs_vec[0][4], dim=1)
+        log_probs[1] = F.log_softmax(outputs_vec[1][4], dim=1)
         
         ml_pm_loss[0] = F.kl_div(log_probs[0], probs[1], False) / imgs
         ml_pm_loss[1] = F.kl_div(log_probs[1], probs[0], False) / imgs

@@ -147,7 +147,7 @@ class MGN(nn.Module):
                 self._init_fc(fc_id_256_a[i])
   
             self.reduction_n = nn.ModuleList(reduction_n)
-            self.fc_id_256_a = nn.ModuleList(fc_id_256_a)
+            #self.fc_id_256_a = nn.ModuleList(fc_id_256_a)
 
         # CSCE 625: Use mutual learning (extact logits)
         if args.mutual_learning:
@@ -189,7 +189,7 @@ class MGN(nn.Module):
         
         if self.args.use_stn:
             x = self.stn(x)
-        
+
         x = self.backone(x)
 
         # Branch output from Resnet
@@ -243,7 +243,7 @@ class MGN(nn.Module):
         # ln_pa = torch.Tensor(self.N, batch_size, 751)
         fn_pa = torch.Tensor(self.N, batch_size, self.args.feats)
         fn_pa_t = torch.Tensor(batch_size, self.N, self.args.feats)
-        if self.fc_id_256_a:
+        if self.args.use_aligned_branch:
             
             # Create branch and local pooling
             pa = self.pa(x)
@@ -269,10 +269,9 @@ class MGN(nn.Module):
             # logits = self.fc_ml(l_p1)
             logits = l_p1
 
-        # pdb.set_trace()
         predict = torch.cat([fg_p1, fg_p2, fg_p3, f0_p2, f1_p2, f0_p3, f1_p3, f2_p3], dim=1)
 
-        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, fn_pa_t, logits
+        return predict, fg_p1, fg_p2, fg_p3, l_p1, l_p2, l_p3, l0_p2, l1_p2, l0_p3, l1_p3, l2_p3, fn_pa_t
 
         
 

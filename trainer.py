@@ -43,8 +43,8 @@ class Trainer():
         # CSCE 625: Code to switch out the loss function after half way through epochs
         # (only effective if using mixed loss)
         epoch = self.scheduler.last_epoch + 1
-        if epoch % self.args.switch_loss_every == 0:
-            self.loss.swap_mixed_loss()
+        if self.args.use_mixed_loss and (epoch % self.args.switch_loss_every) == 0:
+                self.loss.swap_mixed_loss()
         try:
             lr = self.scheduler.get_lr()[0]
         except:
@@ -58,7 +58,6 @@ class Trainer():
         for batch, (inputs, labels) in enumerate(self.train_loader): 
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
-
             # outputs in the market dataset is a tuple of 13 tensor of the following sizes:
             # 1: 32 X 2048 (concatonated features) (used for testing)
             # 4: 32 X 256 (used for backprop)
@@ -78,29 +77,33 @@ class Trainer():
                 total_loss += loss2
             else:
                 loss = self.loss(outputs, labels)
-            
             total_loss += loss
+            
             # Back prop
             self.optimizer.zero_grad()
-            loss.backward(retain_graph=True)
-            self.optimizer.step()
-            
             if hasattr(self, 'model2'):
+                loss.backward(retain_graph=True)
+                self.optimizer.step()
+
                 self.optimizer2.zero_grad()
-                loss2.backward()
+                loss2.backward(retain_graph=False)
                 self.optimizer2.step()
+            else:
+                loss.backward()
+                self.optimizer.step()
 
             self.ckpt.write_log('\r[INFO] [{}/{}]\t{}/{}\t{}'.format(
                 epoch, self.args.epochs,
                 batch + 1, len(self.train_loader),
                 self.loss.display_loss(batch)), 
             end='' if batch+1 != len(self.train_loader) else '\n')
-            
+           
+        self.losses.append(total_loss) 
         if self.args.save_on_min:
             os.makedirs('models', exist_ok=True)
             if min(self.losses) == total_loss:
                 torch.save(self.model.model.state_dict(), 'models/' + self.args.save + '.pt')
-        
+        del outputs
 
         if self.args.decay_type == 'reduce_on_plateau':
             self.scheduler.step(total_loss)

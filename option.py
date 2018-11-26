@@ -70,12 +70,17 @@ parser.add_argument('--use_stn', action='store_true', help='use the spatial tran
 parser.add_argument('--save_on_min', action='store_true', help='save on min loss')
 
 parser.add_argument('--use_aligned_branch', action='store_true', help='whether to use the optional aligned-parts branch')
-parser.add_argument('--aligned_parts', type=int, default=0, help='number of local parts for aligned branch (set --use_aligned_branch also)')
+parser.add_argument('--aligned_parts', type=int, default=6, help='number of local parts for aligned branch (set --use_aligned_branch also)')
 parser.add_argument('--extract_features_only', action='store_true', help='only extract feature from the dataset')
 parser.add_argument('--gallery_feature_file', type=str, default='feature_val_gallery.mat')
 parser.add_argument('--query_feature_file', type=str, default='feature_val_query.mat')
 
 parser.add_argument('--mutual_learning', action='store_true')
+
+parser.add_argument('--patience', type = int, default = 0, help='Patience for reduce_lr_on_plateau')
+
+parser.add_argument('--use_mixed_loss', action='store_true')
+parser.add_argument('--switch_loss_every', type=int, default=100)
 
 # parser.add_argument('--gallery_labels_file', type=str, default='galleryInfo.txt')
 # parser.add_argument('--query_labels_file', type=str, default='queryInfo.txt')
