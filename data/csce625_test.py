@@ -12,7 +12,7 @@ CSCE 625
 
 Processes images from validation set for CSCE 625
 """
-class csce625(dataset.Dataset):
+class csce625_test(dataset.Dataset):
     def __init__(self, args, transform, dtype):
 
         self.transform = transform
