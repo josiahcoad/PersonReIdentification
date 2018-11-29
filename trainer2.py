@@ -56,7 +56,7 @@ class Trainer2():
             labels = labels.to(self.device)
 
             self.optimizer.zero_grad()
-            outputs = self.model(inputs)
+            outputs = self.model(inputs)[:12]
             loss = self.loss(outputs, labels)
             total_loss += loss
             loss.backward()
@@ -72,7 +72,7 @@ class Trainer2():
             labels = labels2.to(self.device)
 
             self.optimizer.zero_grad()
-            outputs = self.model(inputs)
+            outputs = self.model(inputs)[:12]
             loss = self.loss(outputs, labels)
             total_loss += loss
             loss.backward()
