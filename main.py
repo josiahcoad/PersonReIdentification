@@ -5,7 +5,7 @@ import torch
 import model
 from trainer import Trainer
 from trainer2 import Trainer2
-
+import loss2
 from option import args
 # from args import args
 import utils.utility as utility
@@ -21,7 +21,8 @@ if args.mutual_learning:
 
 if args.two_datasets:
     loader2 = data2.Data2(args)
-    trainer = Trainer2(args, models[0], loss, loader, loader2, ckpt)
+    loss2 = loss2.Loss(args, ckpt) if not args.test_only and not args.extract_features_only else None
+    trainer = Trainer2(args, models[0], loss2, loader, loader2, ckpt)
 else:
     trainer = Trainer(args, models, loss, loader, ckpt)
     

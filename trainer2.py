@@ -98,7 +98,6 @@ class Trainer2():
         self.loss.end_log(len(self.train_loader))
         
     def test(self):
-        set_trace()
         epoch = self.scheduler.last_epoch + 1
         self.ckpt.write_log('\n[INFO] Test:')
         self.model.eval()
